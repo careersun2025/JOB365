@@ -409,38 +409,66 @@ function update(){
 
 /* ---------------- GOOGLE SHEET LOADING ---------------- */
 const HEADER_ALIASES = {
-  company:['company','公司','公司名稱'], title:['title','job','職稱'],
-  category:['category','職能','分類'], city:['city','城市','地點'],
-  lat:['lat','緯度','latitude'], lng:['lng','經度','longitude','lon'],
-  remote:['remote','遠端','可遠端'], overseas:['overseas','海外'],
-  type:['type','類型'], views:['views','點閱','點閱數'],
-  updated:['updated','更新日期','date','更新'], link:['link','url','連結','官網連結','官方連結'],
+  company:['company','公司','公司名稱','公司名稱(中文)'],
+  title:['title','job','職稱','職位','職務'],
+  category:['category','職能','分類','類別'],
+  city:['city','城市','地點','縣市'],
+  lat:['lat','緯度','latitude','經度(緯度)'],
+  lng:['lng','經度','longitude','lon','經度(經度)'],
+  remote:['remote','遠端','可遠端','是否遠端','遠端工作'],
+  overseas:['overseas','海外','外商','外派'],
+  type:['type','類型','職務類型'],
+  views:['views','點閱','點閱數','views_count'],
+  updated:['updated','更新日期','date','更新','last_updated'],
+  link:['link','url','連結','官網連結','官方連結','apply_link']
 };
-function normHeader(h){ return String(h).trim().toLowerCase().replace(/\s+/g,''); }
+
+function normHeader(h){
+  // 去除不可見字元、全形空白、前後空白，轉小寫並移除內部空白
+  return String(h || '')
+    .replace(/[\u200B-\u200F\uFEFF]/g,'') // invisible chars
+    .replace(/\u3000/g,' ') // 全形空白轉半形
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g,'');
+}
+
 function buildHeaderMap(headers){
   const map = {};
+  if(!Array.isArray(headers)) return map;
   headers.forEach(h=>{
     const norm = normHeader(h);
     for(const [key, aliases] of Object.entries(HEADER_ALIASES)){
-      if(aliases.some(a=> normHeader(a)===norm)) map[key]=h;
+      if(aliases.some(a=> normHeader(a) === norm)){
+        map[key] = h; // 保留原始 header 名稱以便 row[map[key]] 使用
+        return;
+      }
     }
+    // 若沒對上，仍把原始 header 記錄為 colN 以免遺失欄位
+    const idx = headers.indexOf(h);
+    map[`col${idx}`] = h;
   });
   return map;
 }
-function parseBool(v){ return ['true','1','是','yes','y','v','✓','remote'].includes(String(v).trim().toLowerCase()); }
+
+function parseBool(v){
+  if(v === undefined || v === null) return false;
+  const s = String(v).trim().toLowerCase();
+  return ['true','1','是','yes','y','v','✓','remote','t','on'].includes(s);
+}
 
 function rowToJob(row, map, idx){
   const get = k => map[k] ? String(row[map[k]] ?? '').trim() : '';
   const city = get('city');
-  let lat = parseFloat(get('lat'));
-  let lng = parseFloat(get('lng'));
+  let lat = parseFloat(get('lat').replace(/,/g,'')) || NaN;
+  let lng = parseFloat(get('lng').replace(/,/g,'')) || NaN;
   if((isNaN(lat) || isNaN(lng)) && CITY_COORDS[city]){ [lat,lng] = CITY_COORDS[city]; }
   const updatedRaw = get('updated');
   const updatedDate = updatedRaw ? new Date(updatedRaw) : new Date();
   return {
     id: idx+1,
-    company: get('company'),
-    title: get('title'),
+    company: get('company') || '',
+    title: get('title') || '',
     category: get('category') || '其他',
     city: city || '未提供地點',
     lat: isNaN(lat) ? null : lat,
@@ -448,9 +476,9 @@ function rowToJob(row, map, idx){
     remote: parseBool(get('remote')),
     overseas: parseBool(get('overseas')),
     type: get('type') || '未提供',
-    views: parseInt(get('views')) || 0,
+    views: (parseInt(get('views').replace(/,/g,'')) || 0),
     updated: isNaN(updatedDate.getTime()) ? new Date() : updatedDate,
-    link: get('link') || null,
+    link: (get('link') || null)
   };
 }
 
@@ -463,7 +491,7 @@ async function loadFromSheet(url){
     const gid = gidMatch ? gidMatch[1] : '0';
     const sheetId = idMatch[1];
 
-    // 先嘗試 gviz JSON（通常較穩定且可解析欄位名稱）
+    // 嘗試 gviz JSON
     const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
     console.info('嘗試 gviz JSON:', jsonUrl);
 
@@ -471,11 +499,11 @@ async function loadFromSheet(url){
     console.info('gviz JSON status:', res.status, res.url);
 
     let text = await res.text();
+    console.info('response preview:', text.slice(0, 500));
 
-    // 如果回傳看起來像 HTML（登入頁或錯誤頁），拋錯
-    if(text.trim().startsWith('<')) {
-      console.warn('gviz JSON 回傳 HTML，可能是權限或 CORS 問題，嘗試 CSV 端點作為 fallback');
-      // 嘗試 CSV 端點
+    // 如果回傳 HTML（登入頁或錯誤頁），退回 CSV
+    if(text.trim().startsWith('<')){
+      console.warn('gviz JSON 回傳 HTML，可能為權限或 CORS 問題，嘗試 CSV 端點作為 fallback');
       const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
       console.info('嘗試 CSV:', csvUrl);
       res = await fetch(csvUrl);
@@ -488,19 +516,22 @@ async function loadFromSheet(url){
       if(parsedCsv.errors && parsedCsv.errors.length) console.warn('Papa.parse CSV errors:', parsedCsv.errors);
       if(!parsedCsv.data || !parsedCsv.data.length) throw new Error('CSV 解析後沒有資料');
       const mapCsv = buildHeaderMap(parsedCsv.meta.fields || []);
+      console.info('CSV headers:', parsedCsv.meta.fields);
+      console.info('buildHeaderMap result:', mapCsv);
       if(!mapCsv.company || !mapCsv.title) throw new Error('CSV 找不到 company 或 title 欄位');
       const jobsCsv = parsedCsv.data.map((row,i)=> rowToJob(row, mapCsv, i)).filter(j=> j.company && j.title);
       if(!jobsCsv.length) throw new Error('CSV 每一列都缺少公司或職稱');
       DATA = jobsCsv;
       console.info(`職缺地圖:已從 CSV 載入 ${jobsCsv.length} 筆職缺`);
     } else {
-      // gviz JSON 需要去掉前綴再 parse
+      // gviz JSON 解析
       const jsonText = text.replace(/^[^\{]*/, '').replace(/;$/, '');
       let data;
       try { data = JSON.parse(jsonText); }
       catch(e){ throw new Error('gviz JSON 解析失敗: ' + e.message); }
       if(!data.table || !data.table.rows) throw new Error('gviz JSON 結構不正確');
-      const cols = data.table.cols.map(c => (c.label || c.id || '').trim());
+      const cols = data.table.cols.map(c => (c.label || c.id || '').toString().trim());
+      console.info('gviz cols:', cols);
       const rows = data.table.rows.map(r => {
         const obj = {};
         r.c.forEach((cell, i) => obj[cols[i] || `col${i}`] = cell ? cell.v : '');
@@ -508,12 +539,25 @@ async function loadFromSheet(url){
       });
       if(!rows.length) throw new Error('gviz JSON 解析後沒有資料');
       const map = buildHeaderMap(cols);
+      console.info('buildHeaderMap result:', map);
       if(!map.company || !map.title) throw new Error('gviz JSON 找不到 company 或 title 欄位');
       const jobs = rows.map((row,i)=> rowToJob(row, map, i)).filter(j=> j.company && j.title);
       if(!jobs.length) throw new Error('gviz JSON 每一列都缺少公司或職稱');
       DATA = jobs;
       console.info(`職缺地圖:已從 gviz JSON 載入 ${jobs.length} 筆職缺`);
     }
+
+    // 成功後更新 UI
+    state.activeId = null;
+    rebuildCategoryUI();
+    renderStats();
+    update();
+  }catch(err){
+    console.error('職缺地圖:讀取 Google 試算表失敗 —', err.message);
+    console.debug(err);
+  }
+}
+
 
     // 成功後更新 UI
     state.activeId = null;
