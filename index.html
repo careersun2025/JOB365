@@ -201,6 +201,14 @@ const CITY_COORDS = {
   '舊金山':[37.7749,-122.4194], '西雅圖':[47.6062,-122.3321], '紐約':[40.7128,-74.0060],
   '倫敦':[51.5074,-0.1278], '雪梨':[-33.8688,151.2093], '吉隆坡':[3.1390,101.6869], '曼谷':[13.7563,100.5018],
 };
+// 依長度排序(長的優先比對),避免「新竹市」誤配到「新竹縣」之類的問題
+const CITY_KEYS_SORTED = Object.keys(CITY_COORDS).sort((a,b)=> b.length - a.length);
+function findCityCoords(city){
+  if(!city) return null;
+  if(CITY_COORDS[city]) return CITY_COORDS[city]; // 完全比對優先
+  const matched = CITY_KEYS_SORTED.find(key=> city.includes(key)); // 智慧比對:字串裡包含縣市名稱即可,例如「桃園市蘆竹區」會配到「桃園市」
+  return matched ? CITY_COORDS[matched] : null;
+}
 
 const today = new Date();
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return d; };
@@ -489,7 +497,7 @@ function rowToJob(row, map, idx){
   const city = get('city');
   let lat = parseFloat(get('lat').replace(/,/g,'')) || NaN;
   let lng = parseFloat(get('lng').replace(/,/g,'')) || NaN;
-  if((isNaN(lat) || isNaN(lng)) && CITY_COORDS[city]){ [lat,lng] = CITY_COORDS[city]; }
+  if((isNaN(lat) || isNaN(lng)) && findCityCoords(city)){ [lat,lng] = findCityCoords(city); }
   const updatedRaw = get('updated');
   const updatedDate = updatedRaw ? new Date(updatedRaw) : new Date();
   return {
