@@ -559,19 +559,6 @@ async function loadFromSheet(url){
 }
 
 
-    // 成功後更新 UI
-    state.activeId = null;
-    rebuildCategoryUI();
-    renderStats();
-    update();
-  }catch(err){
-    console.error('職缺地圖:讀取 Google 試算表失敗 —', err.message);
-    // 額外輸出完整錯誤物件以便除錯
-    console.debug(err);
-  }
-}
-
-
 /* ---------------- INIT ----------------
    後台設定:把你的 Google 試算表分享連結貼進下面的 SHEET_URL。
    顧客看到的前台不會出現任何輸入框或設定畫面 —— 資料在背景自動載入,
