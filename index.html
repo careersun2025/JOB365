@@ -94,6 +94,12 @@
   .map-head h2{font-family:var(--font-display);font-size:20px;margin:0;font-weight:600;}
   .map-head p{margin:0;font-size:12px;color:var(--text-faint);font-family:var(--font-mono);}
   #map{height:460px;border-radius:14px;border:1px solid var(--border);}
+  @keyframes markerPulse{
+    0%{ box-shadow:0 0 0 0 var(--pulse-color, rgba(242,169,61,.6)); }
+    70%{ box-shadow:0 0 0 14px transparent; }
+    100%{ box-shadow:0 0 0 0 transparent; }
+  }
+  .marker-active-pulse{ animation:markerPulse 1.4s ease-out 2; }
   .leaflet-popup-content-wrapper{background:var(--bg-panel);color:var(--text);border-radius:10px;}
   .leaflet-popup-tip{background:var(--bg-panel);}
   .popup__cat{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;color:var(--pop-color,var(--teal));}
@@ -336,8 +342,9 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { a
 const markerLayer = L.layerGroup().addTo(map);
 let markers = {};
 function makeIcon(color, active){
-  const s = active?18:12;
-  return L.divIcon({ className:'', html:`<div style="width:${s}px;height:${s}px;border-radius:50%;background:${color};border:2px solid #12151C;box-shadow:0 0 0 ${active?4:0}px ${color}55;transition:all .2s;"></div>`, iconSize:[s,s], iconAnchor:[s/2,s/2] });
+  const s = active?24:12;
+  const pulseClass = active ? 'marker-active-pulse' : '';
+  return L.divIcon({ className:'', html:`<div class="${pulseClass}" style="--pulse-color:${color}99;width:${s}px;height:${s}px;border-radius:50%;background:${color};border:2px solid #12151C;box-shadow:0 0 0 ${active?5:0}px ${color}55;transition:width .25s,height .25s;"></div>`, iconSize:[s,s], iconAnchor:[s/2,s/2] });
 }
 
 /* ---------------- FILTER / SORT LOGIC ---------------- */
@@ -416,11 +423,18 @@ function focusJob(id, flyMap){
   document.querySelectorAll('.card').forEach(c=> c.classList.toggle('highlight', Number(c.dataset.id)===id));
   renderMap(getFiltered());
   if(job && flyMap && job.lat!=null && job.lng!=null){
-    map.flyTo([job.lat, job.lng], job.overseas ? 5 : 11, { duration:.8 });
-    markers[id] && markers[id].openPopup();
-    // 手機版(小螢幕)點卡片時,自動捲動到地圖區塊,不用使用者自己往下滑
-    if(window.matchMedia('(max-width: 720px)').matches){
+    const isMobile = window.matchMedia('(max-width: 720px)').matches;
+    const targetZoom = job.overseas ? 7 : 14; // 放大幅度加強,尤其是台灣本地職缺會拉得更近
+    const doFly = ()=>{
+      map.flyTo([job.lat, job.lng], targetZoom, { duration:1 });
+      markers[id] && setTimeout(()=> markers[id].openPopup(), 550);
+    };
+    if(isMobile){
+      // 手機版:先捲動到地圖區塊,捲動結束後才開始放大聚焦,順序清楚不會兩個動作打架
       document.getElementById('map').scrollIntoView({ behavior:'smooth', block:'center' });
+      setTimeout(doFly, 450);
+    } else {
+      doFly();
     }
   }
   if(job && !flyMap){
