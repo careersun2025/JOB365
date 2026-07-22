@@ -364,7 +364,7 @@ function renderList(items){
       </div>
       <h3 class="card__title">${job.title}</h3>
       <div class="card__company">${job.company}</div>
-      <div class="card__meta"><span>${job.city}</span><span>·</span><span>${job.type}</span><span>·</span><span class="mono">${job.views} 次點閱</span>${job.salary ? `<span>·</span><span class="mono">${job.salary}</span>` : ''}</div>
+      <div class="card__meta"><span>${job.city}</span><span>·</span><span>${job.type}</span>${job.salary ? `<span>·</span><span class="mono">${job.salary}</span>` : ''}${job.info ? `<span>·</span><span>${job.info}</span>` : ''}<span>·</span><span class="mono">${job.views} 次點閱</span></div>
       ${(CONTACT_LINK || job.link) ? `<a class="card__go" href="${CONTACT_LINK || job.link}" target="_blank" rel="noopener">${CONTACT_LINK ? '加 LINE 詢問 →' : '前往官方頁 →'}</a>` : `<span class="card__go">地圖上查看</span>`}
     `;
     card.addEventListener('click', (e)=>{ if(e.target.closest('a')) return; focusJob(job.id, true); });
@@ -429,7 +429,8 @@ const HEADER_ALIASES = {
   views:['views','點閱','點閱數','views_count'],
   updated:['updated','更新日期','date','更新','last_updated'],
   link:['link','url','連結','官網連結','官方連結','apply_link'],
-  salary:['salary','薪資','薪水','薪資待遇','待遇','pay']
+  salary:['salary','薪資','薪水','薪資待遇','待遇','pay'],
+  info:['info','職缺資訊','資訊','說明','備註','description','note']
 };
 
 function normHeader(h){
@@ -488,7 +489,8 @@ function rowToJob(row, map, idx){
     views: (parseInt(get('views').replace(/,/g,'')) || 0),
     updated: isNaN(updatedDate.getTime()) ? new Date() : updatedDate,
     link: (get('link') || null),
-    salary: (get('salary') || '')
+    salary: (get('salary') || ''),
+    info: (get('info') || '')
   };
 }
 
@@ -501,61 +503,30 @@ async function loadFromSheet(url){
     const gid = gidMatch ? gidMatch[1] : '0';
     const sheetId = idMatch[1];
 
-    // 嘗試 gviz JSON
-    const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
-    console.info('嘗試 gviz JSON:', jsonUrl);
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+    console.info('嘗試 CSV:', csvUrl);
 
-    let res = await fetch(jsonUrl);
-    console.info('gviz JSON status:', res.status, res.url);
+    const res = await fetch(csvUrl);
+    console.info('CSV status:', res.status, res.url);
+    if(!res.ok) throw new Error('CSV 端點讀取失敗,請確認試算表已設為「知道連結的任何人皆可檢視」');
 
-    let text = await res.text();
-    console.info('response preview:', text.slice(0, 500));
+    const text = await res.text();
+    if(text.trim().startsWith('<')) throw new Error('回傳的是 HTML 不是資料,通常代表權限沒開對,或是連結格式不正確');
 
-    // 如果回傳 HTML（登入頁或錯誤頁），退回 CSV
-    if(text.trim().startsWith('<')){
-      console.warn('gviz JSON 回傳 HTML，可能為權限或 CORS 問題，嘗試 CSV 端點作為 fallback');
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-      console.info('嘗試 CSV:', csvUrl);
-      res = await fetch(csvUrl);
-      console.info('CSV status:', res.status, res.url);
-      if(!res.ok) throw new Error('CSV 端點讀取失敗，請確認試算表已設為「任何知道連結的人皆可檢視」或已 Publish');
-      text = await res.text();
-      if(text.trim().startsWith('<')) throw new Error('CSV 端點回傳 HTML，可能仍為權限或 CORS 問題');
-      // 解析 CSV
-      const parsedCsv = Papa.parse(text, { header:true, skipEmptyLines:true });
-      if(parsedCsv.errors && parsedCsv.errors.length) console.warn('Papa.parse CSV errors:', parsedCsv.errors);
-      if(!parsedCsv.data || !parsedCsv.data.length) throw new Error('CSV 解析後沒有資料');
-      const mapCsv = buildHeaderMap(parsedCsv.meta.fields || []);
-      console.info('CSV headers:', parsedCsv.meta.fields);
-      console.info('buildHeaderMap result:', mapCsv);
-      if(!mapCsv.company || !mapCsv.title) throw new Error('CSV 找不到 company 或 title 欄位');
-      const jobsCsv = parsedCsv.data.map((row,i)=> rowToJob(row, mapCsv, i)).filter(j=> j.company && j.title);
-      if(!jobsCsv.length) throw new Error('CSV 每一列都缺少公司或職稱');
-      DATA = jobsCsv;
-      console.info(`職缺地圖:已從 CSV 載入 ${jobsCsv.length} 筆職缺`);
-    } else {
-      // gviz JSON 解析
-      const jsonText = text.replace(/^[^\{]*/, '').replace(/;$/, '');
-      let data;
-      try { data = JSON.parse(jsonText); }
-      catch(e){ throw new Error('gviz JSON 解析失敗: ' + e.message); }
-      if(!data.table || !data.table.rows) throw new Error('gviz JSON 結構不正確');
-      const cols = data.table.cols.map(c => (c.label || c.id || '').toString().trim());
-      console.info('gviz cols:', cols);
-      const rows = data.table.rows.map(r => {
-        const obj = {};
-        r.c.forEach((cell, i) => obj[cols[i] || `col${i}`] = cell ? cell.v : '');
-        return obj;
-      });
-      if(!rows.length) throw new Error('gviz JSON 解析後沒有資料');
-      const map = buildHeaderMap(cols);
-      console.info('buildHeaderMap result:', map);
-      if(!map.company || !map.title) throw new Error('gviz JSON 找不到 company 或 title 欄位');
-      const jobs = rows.map((row,i)=> rowToJob(row, map, i)).filter(j=> j.company && j.title);
-      if(!jobs.length) throw new Error('gviz JSON 每一列都缺少公司或職稱');
-      DATA = jobs;
-      console.info(`職缺地圖:已從 gviz JSON 載入 ${jobs.length} 筆職缺`);
-    }
+    const parsedCsv = Papa.parse(text, { header:true, skipEmptyLines:true });
+    if(parsedCsv.errors && parsedCsv.errors.length) console.warn('Papa.parse CSV errors:', parsedCsv.errors);
+    if(!parsedCsv.data || !parsedCsv.data.length) throw new Error('試算表目前是空的');
+
+    const map = buildHeaderMap(parsedCsv.meta.fields || []);
+    console.info('CSV headers:', parsedCsv.meta.fields);
+    console.info('buildHeaderMap result:', map);
+    if(!map.company || !map.title) throw new Error('找不到 company 或 title 欄位,請檢查第一列欄位名稱');
+
+    const jobs = parsedCsv.data.map((row,i)=> rowToJob(row, map, i)).filter(j=> j.company && j.title);
+    if(!jobs.length) throw new Error('每一列都缺少公司或職稱,請檢查資料內容');
+
+    DATA = jobs;
+    console.info(`職缺地圖:已從 Google 試算表載入 ${jobs.length} 筆職缺`);
 
     // 成功後更新 UI
     state.activeId = null;
