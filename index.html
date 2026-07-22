@@ -356,7 +356,7 @@ function renderList(items){
       </div>
       <h3 class="card__title">${job.title}</h3>
       <div class="card__company">${job.company}</div>
-      <div class="card__meta"><span>${job.city}</span><span>·</span><span>${job.type}</span><span>·</span><span class="mono">${job.views} 次點閱</span></div>
+      <div class="card__meta"><span>${job.city}</span><span>·</span><span>${job.type}</span><span>·</span><span class="mono">${job.views} 次點閱</span>${job.salary ? `<span>·</span><span class="mono">${job.salary}</span>` : ''}</div>
       ${(CONTACT_LINK || job.link) ? `<a class="card__go" href="${CONTACT_LINK || job.link}" target="_blank" rel="noopener">${CONTACT_LINK ? '加 LINE 詢問 →' : '前往官方頁 →'}</a>` : `<span class="card__go">地圖上查看</span>`}
     `;
     card.addEventListener('click', (e)=>{ if(e.target.closest('a')) return; focusJob(job.id, true); });
@@ -420,7 +420,8 @@ const HEADER_ALIASES = {
   type:['type','類型','職務類型'],
   views:['views','點閱','點閱數','views_count'],
   updated:['updated','更新日期','date','更新','last_updated'],
-  link:['link','url','連結','官網連結','官方連結','apply_link']
+  link:['link','url','連結','官網連結','官方連結','apply_link'],
+  salary:['salary','薪資','薪水','薪資待遇','待遇','pay']
 };
 
 function normHeader(h){
@@ -478,7 +479,8 @@ function rowToJob(row, map, idx){
     type: get('type') || '未提供',
     views: (parseInt(get('views').replace(/,/g,'')) || 0),
     updated: isNaN(updatedDate.getTime()) ? new Date() : updatedDate,
-    link: (get('link') || null)
+    link: (get('link') || null),
+    salary: (get('salary') || '')
   };
 }
 
