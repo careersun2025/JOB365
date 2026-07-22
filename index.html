@@ -456,31 +456,77 @@ function rowToJob(row, map, idx){
 
 async function loadFromSheet(url){
   try{
+    console.info('職缺地圖:開始從試算表載入', url);
     const idMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if(!idMatch) throw new Error('這不像是有效的 Google 試算表連結');
+    if(!idMatch) throw new Error('這不像是有效的 Google 試算表連結 (找不到 id)');
     const gidMatch = url.match(/gid=([0-9]+)/);
     const gid = gidMatch ? gidMatch[1] : '0';
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${idMatch[1]}/gviz/tq?tqx=out:csv&gid=${gid}`;
-    const res = await fetch(csvUrl);
-    if(!res.ok) throw new Error('無法讀取,請確認試算表已設為「知道連結的任何人皆可檢視」');
-    const text = await res.text();
-    if(text.trim().startsWith('<')) throw new Error('讀到的不是資料,請確認共用權限與連結是否正確');
-    const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
-    if(!parsed.data.length) throw new Error('試算表目前是空的');
-    const map = buildHeaderMap(parsed.meta.fields || []);
-    if(!map.company || !map.title) throw new Error('找不到 company 或 title 欄位,請檢查第一列欄位名稱');
-    const jobs = parsed.data.map((row,i)=> rowToJob(row, map, i)).filter(j=> j.company && j.title);
-    if(!jobs.length) throw new Error('每一列都缺少公司或職稱,請檢查資料內容');
-    DATA = jobs;
+    const sheetId = idMatch[1];
+
+    // 先嘗試 gviz JSON（通常較穩定且可解析欄位名稱）
+    const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+    console.info('嘗試 gviz JSON:', jsonUrl);
+
+    let res = await fetch(jsonUrl);
+    console.info('gviz JSON status:', res.status, res.url);
+
+    let text = await res.text();
+
+    // 如果回傳看起來像 HTML（登入頁或錯誤頁），拋錯
+    if(text.trim().startsWith('<')) {
+      console.warn('gviz JSON 回傳 HTML，可能是權限或 CORS 問題，嘗試 CSV 端點作為 fallback');
+      // 嘗試 CSV 端點
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+      console.info('嘗試 CSV:', csvUrl);
+      res = await fetch(csvUrl);
+      console.info('CSV status:', res.status, res.url);
+      if(!res.ok) throw new Error('CSV 端點讀取失敗，請確認試算表已設為「任何知道連結的人皆可檢視」或已 Publish');
+      text = await res.text();
+      if(text.trim().startsWith('<')) throw new Error('CSV 端點回傳 HTML，可能仍為權限或 CORS 問題');
+      // 解析 CSV
+      const parsedCsv = Papa.parse(text, { header:true, skipEmptyLines:true });
+      if(parsedCsv.errors && parsedCsv.errors.length) console.warn('Papa.parse CSV errors:', parsedCsv.errors);
+      if(!parsedCsv.data || !parsedCsv.data.length) throw new Error('CSV 解析後沒有資料');
+      const mapCsv = buildHeaderMap(parsedCsv.meta.fields || []);
+      if(!mapCsv.company || !mapCsv.title) throw new Error('CSV 找不到 company 或 title 欄位');
+      const jobsCsv = parsedCsv.data.map((row,i)=> rowToJob(row, mapCsv, i)).filter(j=> j.company && j.title);
+      if(!jobsCsv.length) throw new Error('CSV 每一列都缺少公司或職稱');
+      DATA = jobsCsv;
+      console.info(`職缺地圖:已從 CSV 載入 ${jobsCsv.length} 筆職缺`);
+    } else {
+      // gviz JSON 需要去掉前綴再 parse
+      const jsonText = text.replace(/^[^\{]*/, '').replace(/;$/, '');
+      let data;
+      try { data = JSON.parse(jsonText); }
+      catch(e){ throw new Error('gviz JSON 解析失敗: ' + e.message); }
+      if(!data.table || !data.table.rows) throw new Error('gviz JSON 結構不正確');
+      const cols = data.table.cols.map(c => (c.label || c.id || '').trim());
+      const rows = data.table.rows.map(r => {
+        const obj = {};
+        r.c.forEach((cell, i) => obj[cols[i] || `col${i}`] = cell ? cell.v : '');
+        return obj;
+      });
+      if(!rows.length) throw new Error('gviz JSON 解析後沒有資料');
+      const map = buildHeaderMap(cols);
+      if(!map.company || !map.title) throw new Error('gviz JSON 找不到 company 或 title 欄位');
+      const jobs = rows.map((row,i)=> rowToJob(row, map, i)).filter(j=> j.company && j.title);
+      if(!jobs.length) throw new Error('gviz JSON 每一列都缺少公司或職稱');
+      DATA = jobs;
+      console.info(`職缺地圖:已從 gviz JSON 載入 ${jobs.length} 筆職缺`);
+    }
+
+    // 成功後更新 UI
     state.activeId = null;
     rebuildCategoryUI();
     renderStats();
     update();
-    console.info(`職缺地圖:已從 Google 試算表載入 ${jobs.length} 筆職缺`);
   }catch(err){
     console.error('職缺地圖:讀取 Google 試算表失敗 —', err.message);
+    // 額外輸出完整錯誤物件以便除錯
+    console.debug(err);
   }
 }
+
 
 /* ---------------- INIT ----------------
    後台設定:把你的 Google 試算表分享連結貼進下面的 SHEET_URL。
