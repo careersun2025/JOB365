@@ -49,6 +49,9 @@
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .row__label{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;width:52px;flex-shrink:0;}
   .tab{background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--font-body);font-size:13px;padding:7px 14px;border-radius:20px;cursor:pointer;transition:all .15s;}
+  select.tab{-webkit-appearance:none;-moz-appearance:none;appearance:none;padding-right:26px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238B93A1'/></svg>");background-repeat:no-repeat;background-position:right 12px center;}
+  select.tab:focus{outline:none;border-color:var(--text-muted);}
+  select.tab option{background:var(--bg-panel);color:var(--text);}
   .tab:hover{border-color:var(--text-muted);color:var(--text);}
   .tab.active{background:var(--text);border-color:var(--text);color:var(--bg);font-weight:600;}
 
@@ -141,7 +144,10 @@
 </header>
 
 <div class="filterbar">
-  <div class="row" id="regionRow"><span class="row__label">地區</span></div>
+  <div class="row" id="regionRow">
+    <span class="row__label">地區</span>
+    <select class="tab" id="cityFilter" style="cursor:pointer;"><option value="all">全部縣市</option></select>
+  </div>
   <div class="row" id="sortRow"><span class="row__label">排序</span></div>
   <div class="row" id="catRow">
     <span class="row__label">性質</span>
@@ -207,7 +213,7 @@ let DATA = [
 ];
 
 /* ---------------- STATE ---------------- */
-const state = { query:'', region:'all', sort:'hot', cats:new Set(), remoteOnly:false, activeId:null };
+const state = { query:'', region:'all', city:'all', sort:'hot', cats:new Set(), remoteOnly:false, activeId:null };
 const REGIONS = [
   {key:'all', label:'全部'}, {key:'taiwan', label:'台灣'},
   {key:'foreign', label:'外商'},
@@ -234,6 +240,14 @@ function deriveCategories(data){
   const map = {};
   set.forEach((c,i)=> map[c]=PALETTE[i%PALETTE.length]);
   return {cats:set, colorMap:map};
+}
+
+function rebuildCityUI(){
+  const cityFilter = document.getElementById('cityFilter');
+  const cities = [...new Set(DATA.map(j=>j.city).filter(Boolean))].sort((a,b)=> a.localeCompare(b,'zh-Hant'));
+  cityFilter.innerHTML = '<option value="all">全部縣市</option>' + cities.map(c=> `<option value="${c}">${c}</option>`).join('');
+  state.city = 'all';
+  cityFilter.value = 'all';
 }
 
 function rebuildCategoryUI(){
@@ -292,9 +306,11 @@ SORTS.forEach(s=>{
   sortRow.appendChild(b);
 });
 document.getElementById('remoteOnly').addEventListener('change', e=>{ state.remoteOnly = e.target.checked; update(); });
+document.getElementById('cityFilter').addEventListener('change', e=>{ state.city = e.target.value; update(); });
 document.getElementById('clearBtn').addEventListener('click', ()=>{
-  state.query=''; state.region='all'; state.sort='hot'; state.cats.clear(); state.remoteOnly=false;
+  state.query=''; state.region='all'; state.city='all'; state.sort='hot'; state.cats.clear(); state.remoteOnly=false;
   document.getElementById('searchInput').value=''; document.getElementById('remoteOnly').checked=false;
+  document.getElementById('cityFilter').value='all';
   update();
 });
 document.getElementById('searchForm').addEventListener('submit', e=>{
@@ -330,6 +346,7 @@ function isNew(job){ return (today - job.updated) / 86400000 <= 7; }
 function getFiltered(){
   let arr = DATA.filter(job=>{
     if(!matchesRegion(job)) return false;
+    if(state.city && state.city !== 'all' && job.city !== state.city) return false;
     if(state.cats.size && !state.cats.has(job.category)) return false;
     if(state.remoteOnly && !job.remote) return false;
     if(state.query){
@@ -531,6 +548,7 @@ async function loadFromSheet(url){
     // 成功後更新 UI
     state.activeId = null;
     rebuildCategoryUI();
+    rebuildCityUI();
     renderStats();
     update();
   }catch(err){
@@ -555,6 +573,7 @@ const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1D9sqdzSZGe8Cpo-XqZKYn
 const CONTACT_LINK = 'https://lin.ee/oX4esly'
 
 rebuildCategoryUI();
+rebuildCityUI();
 renderStats();
 update();
 
