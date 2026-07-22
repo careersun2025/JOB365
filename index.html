@@ -418,6 +418,10 @@ function focusJob(id, flyMap){
   if(job && flyMap && job.lat!=null && job.lng!=null){
     map.flyTo([job.lat, job.lng], job.overseas ? 5 : 11, { duration:.8 });
     markers[id] && markers[id].openPopup();
+    // 手機版(小螢幕)點卡片時,自動捲動到地圖區塊,不用使用者自己往下滑
+    if(window.matchMedia('(max-width: 720px)').matches){
+      document.getElementById('map').scrollIntoView({ behavior:'smooth', block:'center' });
+    }
   }
   if(job && !flyMap){
     document.querySelector(`.card[data-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
