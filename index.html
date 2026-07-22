@@ -198,6 +198,14 @@ const CITY_COORDS = {
 
 const today = new Date();
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return d; };
+
+/* ---------------- DEMO FALLBACK DATA(試算表載入成功前，或載入失敗時顯示) ---------------- */
+let DATA = [
+  {id:1, company:'Nordwell Systems', title:'資深後端工程師', category:'工程', city:'台北', lat:25.0330, lng:121.5654, remote:true, overseas:false, type:'外商', views:842, updated:daysAgo(2), link:null, salary:''},
+  {id:2, company:'Fathom Design Studio', title:'UX 設計師', category:'設計', city:'台中', lat:24.1477, lng:120.6736, remote:false, overseas:false, type:'本土', views:212, updated:daysAgo(12), link:null, salary:''},
+  {id:3, company:'Marlow Analytics', title:'資料科學家', category:'資料', city:'台北', lat:25.0210, lng:121.5445, remote:true, overseas:false, type:'外商', views:701, updated:daysAgo(1), link:null, salary:''},
+];
+
 /* ---------------- STATE ---------------- */
 const state = { query:'', region:'all', sort:'hot', cats:new Set(), remoteOnly:false, activeId:null };
 const REGIONS = [
