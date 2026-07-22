@@ -199,30 +199,6 @@ const CITY_COORDS = {
 const today = new Date();
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return d; };
 
-/* ---------------- DEMO FALLBACK DATA ---------------- */
-let DATA = [
-  {id:1, company:'Nordwell Systems', title:'資深後端工程師', category:'工程', city:'台北', lat:25.0330, lng:121.5654, remote:true, overseas:false, type:'外商', views:842, updated:daysAgo(2), link:null},
-  {id:2, company:'Kestrel Robotics', title:'韌體工程師', category:'工程', city:'新竹', lat:24.8138, lng:120.9675, remote:false, overseas:false, type:'外商', views:301, updated:daysAgo(9), link:null},
-  {id:3, company:'Solstice Health', title:'前端工程師(React)', category:'工程', city:'台北', lat:25.0478, lng:121.5319, remote:true, overseas:false, type:'本土', views:560, updated:daysAgo(4), link:null},
-  {id:4, company:'Marlow Analytics', title:'資料科學家', category:'資料', city:'台北', lat:25.0210, lng:121.5445, remote:true, overseas:false, type:'外商', views:701, updated:daysAgo(1), link:null},
-  {id:5, company:'Fathom Design Studio', title:'UX 設計師', category:'設計', city:'台中', lat:24.1477, lng:120.6736, remote:false, overseas:false, type:'本土', views:212, updated:daysAgo(12), link:null},
-  {id:6, company:'Aria Cloud', title:'DevOps 工程師', category:'工程', city:'高雄', lat:22.6273, lng:120.3014, remote:true, overseas:false, type:'外商', views:389, updated:daysAgo(6), link:null},
-  {id:7, company:'Verdant Robotics APAC', title:'機器學習工程師', category:'資料', city:'新竹', lat:24.8010, lng:120.9714, remote:false, overseas:false, type:'外商', views:455, updated:daysAgo(3), link:null},
-  {id:8, company:'Lumen Finance', title:'產品經理', category:'產品', city:'台北', lat:25.0399, lng:121.5599, remote:false, overseas:false, type:'外商', views:678, updated:daysAgo(8), link:null},
-  {id:9, company:'Harbor & Co', title:'行銷經理', category:'行銷業務', city:'台南', lat:22.9997, lng:120.2270, remote:true, overseas:false, type:'本土', views:190, updated:daysAgo(5), link:null},
-  {id:10, company:'Northstar Semiconductor', title:'IC 設計工程師', category:'工程', city:'新竹', lat:24.8288, lng:120.9925, remote:false, overseas:false, type:'外商', views:520, updated:daysAgo(11), link:null},
-  {id:11, company:'Piper Analytics', title:'商業分析師', category:'資料', city:'台北', lat:25.0630, lng:121.5195, remote:true, overseas:false, type:'外商', views:333, updated:daysAgo(1), link:null},
-  {id:12, company:'Willow Studio', title:'平面 / 品牌設計師', category:'設計', city:'台北', lat:25.0170, lng:121.5350, remote:false, overseas:false, type:'本土', views:145, updated:daysAgo(14), link:null},
-  {id:13, company:'Anchor Cybersecurity', title:'資安工程師', category:'工程', city:'台北', lat:25.0500, lng:121.5470, remote:true, overseas:false, type:'外商', views:610, updated:daysAgo(2), link:null},
-  {id:14, company:'Everline Logistics', title:'供應鏈專員', category:'行銷業務', city:'桃園', lat:24.9936, lng:121.3010, remote:false, overseas:false, type:'本土', views:98, updated:daysAgo(20), link:null},
-  {id:15, company:'Pinecone AI', title:'機器學習研究員', category:'資料', city:'新加坡', lat:1.3521, lng:103.8198, remote:true, overseas:true, type:'外商', views:730, updated:daysAgo(3), link:null},
-  {id:16, company:'Kaida Games', title:'遊戲客戶端工程師', category:'工程', city:'台北', lat:25.0410, lng:121.5620, remote:false, overseas:false, type:'本土', views:267, updated:daysAgo(7), link:null},
-  {id:17, company:'Meridian Health Tech', title:'產品設計師', category:'設計', city:'台中', lat:24.1630, lng:120.6480, remote:true, overseas:false, type:'外商', views:410, updated:daysAgo(4), link:null},
-  {id:18, company:'Halcyon Robotics', title:'機構工程師', category:'工程', city:'東京', lat:35.6762, lng:139.6503, remote:false, overseas:true, type:'外商', views:288, updated:daysAgo(10), link:null},
-  {id:19, company:'Coral Reef Analytics', title:'業務開發經理', category:'行銷業務', city:'高雄', lat:22.6163, lng:120.3133, remote:false, overseas:false, type:'本土', views:176, updated:daysAgo(6), link:null},
-  {id:20, company:'Ridgeline Cloud', title:'Site Reliability Engineer', category:'工程', city:'台北', lat:25.0340, lng:121.5750, remote:true, overseas:false, type:'外商', views:590, updated:daysAgo(1), link:null},
-];
-
 /* ---------------- STATE ---------------- */
 const state = { query:'', region:'all', sort:'hot', cats:new Set(), remoteOnly:false, activeId:null };
 const REGIONS = [
