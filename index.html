@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JOB365職缺地圖</title>
+<title>JOB365·職缺地圖</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -118,7 +118,7 @@
 <nav class="nav">
   <div class="nav__logo">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8z" stroke="#F2A93D" stroke-width="1.6"/><circle cx="12" cy="10" r="2.6" fill="#F2A93D"/></svg>
-    職缺地圖
+    JOB365·職缺地圖
   </div>
   <div class="nav__links">
     <a href="#">關於資料來源</a>
@@ -129,9 +129,9 @@
 <header class="hero">
   <div class="hero__sky" id="sky"></div>
   <div class="hero__content">
-    <div class="hero__eyebrow">JOB365 · 精選的工作機會</div>
+    <div class="hero__eyebrow"> JOB365·精選的工作機會</div>
     <h1>把散落各地的職缺,<br>收進<span>一張看得到的地圖</span></h1>
-    <p>真實職缺、安心精選。</p>
+    <p>真實職缺,用心挑選。</p>
     <form class="search" id="searchForm">
       <input id="searchInput" type="text" placeholder="用空白分隔多個條件,例:工程 新竹 遠端" autocomplete="off">
       <button type="submit">搜尋</button>
@@ -144,7 +144,7 @@
   <div class="row" id="regionRow"><span class="row__label">地區</span></div>
   <div class="row" id="sortRow"><span class="row__label">排序</span></div>
   <div class="row" id="catRow">
-    <span class="row__label">職能</span>
+    <span class="row__label">性質</span>
     <label class="remote-toggle"><input type="checkbox" id="remoteOnly"> 只看可遠端</label>
     <button class="clear-btn" id="clearBtn">清除全部篩選</button>
   </div>
@@ -198,11 +198,10 @@ const CITY_COORDS = {
 
 const today = new Date();
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return d; };
-
 /* ---------------- STATE ---------------- */
 const state = { query:'', region:'all', sort:'hot', cats:new Set(), remoteOnly:false, activeId:null };
 const REGIONS = [
-  {key:'all', label:'全部'}, {key:'taiwan', label:'台灣'}, {key:'overseas', label:'海外'},
+  {key:'all', label:'全部'}, {key:'taiwan', label:'台灣'},
   {key:'foreign', label:'外商'},
 ];
 const SORTS = [
@@ -479,7 +478,6 @@ async function loadFromSheet(url){
     update();
     console.info(`職缺地圖:已從 Google 試算表載入 ${jobs.length} 筆職缺`);
   }catch(err){
-    // 讀取失敗時安靜地保留目前畫面上的資料(不打擾使用者),只記錄在 console 方便維運排查
     console.error('職缺地圖:讀取 Google 試算表失敗 —', err.message);
   }
 }
