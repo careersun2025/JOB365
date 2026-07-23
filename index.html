@@ -325,10 +325,10 @@ function rebuildCityUI(){
 }
 
 // 通用:依資料裡實際出現的值,動態建立一列可複選的色塊篩選(職能/班別/休假共用同一套邏輯)
-function buildDynamicChipRow(rowId, field, stateSet){
+function buildDynamicChipRow(rowId, field, stateSet, uniformColor){
   const values = [...new Set(DATA.map(j=>j[field]).filter(Boolean))];
   const colorMap = {};
-  values.forEach((v,i)=> colorMap[v]=PALETTE[i%PALETTE.length]);
+  values.forEach((v,i)=> colorMap[v] = uniformColor || PALETTE[i%PALETTE.length]);
   stateSet.clear();
   const row = document.getElementById(rowId);
   row.querySelectorAll('.chip').forEach(el=> el.remove());
@@ -351,8 +351,8 @@ function rebuildCategoryUI(){
   CATS.forEach(c=> legend.innerHTML += `<span><i style="background:${CAT_COLOR[c]}"></i>${c}</span>`);
 }
 
-function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts)); }
-function rebuildRestUI(){ ({colorMap:REST_COLOR} = buildDynamicChipRow('restRow', 'restDay', state.rests)); }
+function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts, COLORS.gold)); }
+function rebuildRestUI(){ ({colorMap:REST_COLOR} = buildDynamicChipRow('restRow', 'restDay', state.rests, COLORS.coral)); }
 
 /* ---------------- STATS COUNT-UP ---------------- */
 function countUp(el, target){
