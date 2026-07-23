@@ -433,7 +433,7 @@ function renderList(items){
       </div>
       <div class="card__footer">
         <span class="card__views mono">${job.views} 次點閱</span>
-        ${(CONTACT_LINK || job.link) ? `<a class="card__go" href="${CONTACT_LINK || job.link}" target="_blank" rel="noopener">${CONTACT_LINK ? '✦加LINE詢問➲' : '前往官方頁 →'}</a>` : `<span class="card__go">地圖上查看</span>`}
+        ${(CONTACT_LINK || job.link) ? `<a class="card__go" href="${CONTACT_LINK || job.link}" target="_blank" rel="noopener">${CONTACT_LINK ? '✦加LINE詢問 »' : '前往官方頁 →'}</a>` : `<span class="card__go">地圖上查看</span>`}
       </div>
     `;
     card.addEventListener('click', (e)=>{ if(e.target.closest('a')) return; focusJob(job.id, true); });
