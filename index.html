@@ -140,17 +140,50 @@
 
   footer{border-top:1px solid var(--border);padding:22px 32px;font-size:11.5px;color:var(--text-faint);line-height:1.7;}
 
+  .filter-fab{display:none;}
+  .filter-backdrop{display:none;}
+  .filter-sheet-header{display:none;}
+  .filter-sheet-apply{display:none;}
+
   @media (max-width:720px){
     .nav__links{display:none;}
-    .filterbar{padding:14px 16px;}
     .hero{padding:44px 16px 28px;}
     .results-head, .list, .map-section{padding-left:16px;padding-right:16px;}
     .row__label{width:auto;margin-right:2px;}
     .sheet-panel__row{flex-direction:column;}
+
+    /* 篩選浮動按鈕 */
+    .filter-fab{display:flex;align-items:center;gap:7px;position:fixed;right:18px;bottom:18px;z-index:45;background:var(--gold);color:#1A1207;border:none;border-radius:999px;padding:13px 20px;font-family:var(--font-display);font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(242,169,61,.4);cursor:pointer;}
+    .filter-fab__badge{background:#1A1207;color:var(--gold);border-radius:999px;font-size:11px;font-family:var(--font-mono);padding:1px 7px;min-width:16px;text-align:center;}
+
+    /* 背景遮罩 */
+    .filter-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40;}
+    .filter-backdrop.open{opacity:1;pointer-events:auto;}
+
+    /* 篩選面板變成底部滑出 */
+    .filterbar{
+      position:fixed;left:0;right:0;bottom:0;top:auto;
+      max-height:82vh;overflow-y:auto;
+      border-radius:18px 18px 0 0;
+      border:1px solid var(--border);border-bottom:none;
+      box-shadow:0 -12px 36px rgba(0,0,0,.5);
+      transform:translateY(105%);
+      transition:transform .28s ease;
+      z-index:50;
+      padding:16px 16px 12px;
+    }
+    .filterbar.open{transform:translateY(0);}
+
+    .filter-sheet-header{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-weight:600;font-size:15px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-panel);}
+    .filter-sheet-close{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;line-height:1;padding:4px;}
+
+    .filter-sheet-apply{display:block;position:sticky;bottom:0;background:var(--bg-panel);padding-top:12px;margin-top:12px;border-top:1px solid var(--border);}
+    .filter-sheet-apply button{width:100%;background:var(--gold);color:#1A1207;border:none;border-radius:10px;padding:13px;font-family:var(--font-display);font-weight:600;font-size:14px;cursor:pointer;}
   }
 </style>
 </head>
 <body>
+
 
 <nav class="nav">
   <div class="nav__logo">
@@ -178,7 +211,18 @@
   </div>
 </header>
 
-<div class="filterbar">
+<div class="filter-backdrop" id="filterBackdrop"></div>
+<button class="filter-fab" id="filterFab">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 5h18M6 12h12M10 19h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  篩選
+  <span class="filter-fab__badge" id="filterFabBadge" style="display:none;">0</span>
+</button>
+
+<div class="filterbar" id="filterbar">
+  <div class="filter-sheet-header">
+    <span>篩選條件</span>
+    <button class="filter-sheet-close" id="filterSheetClose" aria-label="關閉">✕</button>
+  </div>
   <div class="row" id="regionRow">
     <span class="row__label">地區</span>
     <select class="tab" id="cityFilter" style="cursor:pointer;"><option value="all">全部縣市</option></select>
@@ -191,6 +235,9 @@
     <span class="row__label" style="visibility:hidden;">　</span>
     <label class="remote-toggle"><input type="checkbox" id="remoteOnly"> 只看可遠端</label>
     <button class="clear-btn" id="clearBtn">清除全部篩選</button>
+  </div>
+  <div class="filter-sheet-apply">
+    <button id="filterApplyBtn">顯示 <span id="applyCount">0</span> 筆結果</button>
   </div>
 </div>
 
@@ -351,7 +398,7 @@ function rebuildCategoryUI(){
   CATS.forEach(c=> legend.innerHTML += `<span><i style="background:${CAT_COLOR[c]}"></i>${c}</span>`);
 }
 
-function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts, COLORS.periwinkle)); }
+function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts, '#7C8F3A')); }
 function rebuildRestUI(){ ({colorMap:REST_COLOR} = buildDynamicChipRow('restRow', 'restDay', state.rests, COLORS.coral)); }
 
 /* ---------------- STATS COUNT-UP ---------------- */
@@ -388,6 +435,20 @@ SORTS.forEach(s=>{
   sortRow.appendChild(b);
 });
 document.getElementById('remoteOnly').addEventListener('change', e=>{ state.remoteOnly = e.target.checked; update(); });
+
+function openFilterSheet(){
+  document.getElementById('filterbar').classList.add('open');
+  document.getElementById('filterBackdrop').classList.add('open');
+}
+function closeFilterSheet(){
+  document.getElementById('filterbar').classList.remove('open');
+  document.getElementById('filterBackdrop').classList.remove('open');
+}
+document.getElementById('filterFab').addEventListener('click', openFilterSheet);
+document.getElementById('filterBackdrop').addEventListener('click', closeFilterSheet);
+document.getElementById('filterSheetClose').addEventListener('click', closeFilterSheet);
+document.getElementById('filterApplyBtn').addEventListener('click', closeFilterSheet);
+
 document.getElementById('cityFilter').addEventListener('change', e=>{ state.city = e.target.value; update(); });
 document.getElementById('clearBtn').addEventListener('click', ()=>{
   state.query=''; state.region='all'; state.city='all'; state.sort='hot';
@@ -559,6 +620,14 @@ function update(){
   } else { hintEl.textContent = ''; }
   renderList(filtered);
   renderMap(filtered);
+
+  // 手機版篩選按鈕上的已套用數量徽章、面板底部「顯示 N 筆結果」按鈕
+  const activeCount = (state.region!=='all'?1:0) + (state.city!=='all'?1:0) + (state.sort!=='hot'?1:0)
+    + state.cats.size + state.shifts.size + state.rests.size + (state.remoteOnly?1:0);
+  const badge = document.getElementById('filterFabBadge');
+  badge.textContent = activeCount;
+  badge.style.display = activeCount>0 ? 'inline-block' : 'none';
+  document.getElementById('applyCount').textContent = filtered.length;
 }
 
 /* ---------------- GOOGLE SHEET LOADING ---------------- */
