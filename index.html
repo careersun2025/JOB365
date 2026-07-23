@@ -351,7 +351,7 @@ function rebuildCategoryUI(){
   CATS.forEach(c=> legend.innerHTML += `<span><i style="background:${CAT_COLOR[c]}"></i>${c}</span>`);
 }
 
-function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts, COLORS.blue)); }
+function rebuildShiftUI(){ ({colorMap:SHIFT_COLOR} = buildDynamicChipRow('shiftRow', 'shift', state.shifts, COLORS.gold)); }
 function rebuildRestUI(){ ({colorMap:REST_COLOR} = buildDynamicChipRow('restRow', 'restDay', state.rests, COLORS.coral)); }
 
 /* ---------------- STATS COUNT-UP ---------------- */
