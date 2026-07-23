@@ -149,7 +149,7 @@
     .nav__links{display:none;}
     .hero{padding:44px 16px 28px;}
     .results-head, .list, .map-section{padding-left:16px;padding-right:16px;}
-    .row__label{width:auto;margin-right:2px;}
+    .row__label{width:auto;margin-right:2px;font-size:14px;}
     .sheet-panel__row{flex-direction:column;}
 
     /* 篩選浮動按鈕 */
@@ -164,7 +164,7 @@
     .filterbar{
       position:fixed;left:0;right:0;bottom:0;top:auto;
       max-height:82vh;overflow-y:auto;
-      border-radius:18px 18px 0 0;
+      border-radius:22px 22px 0 0;
       border:1px solid var(--border);border-bottom:none;
       box-shadow:0 -12px 36px rgba(0,0,0,.5);
       transform:translateY(105%);
@@ -173,12 +173,18 @@
       padding:16px 16px 12px;
     }
     .filterbar.open{transform:translateY(0);}
+    .filterbar .tab, .filterbar .chip{font-size:15px;padding:9px 16px;}
+    .filterbar select.tab{border-radius:999px;}
+    .row--actions{flex-direction:column;align-items:stretch;gap:12px;}
+    .row--actions .row__label{display:none;}
+    .row--actions .remote-toggle{margin-left:0;justify-content:flex-start;font-size:15px;}
+    .row--actions .clear-btn{width:100%;text-align:center;font-size:14px;}
 
-    .filter-sheet-header{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-weight:600;font-size:15px;padding-bottom:12px;margin-bottom:10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-panel);}
-    .filter-sheet-close{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;line-height:1;padding:4px;}
+    .filter-sheet-header{position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:19px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-panel);text-align:center;}
+    .filter-sheet-close{position:absolute;right:0;background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;line-height:1;padding:4px;}
 
     .filter-sheet-apply{display:block;position:sticky;bottom:0;background:var(--bg-panel);padding-top:12px;margin-top:12px;border-top:1px solid var(--border);}
-    .filter-sheet-apply button{width:100%;background:var(--gold);color:#1A1207;border:none;border-radius:10px;padding:13px;font-family:var(--font-display);font-weight:600;font-size:14px;cursor:pointer;}
+    .filter-sheet-apply button{width:100%;background:var(--gold);color:#1A1207;border:none;border-radius:999px;padding:15px;font-family:var(--font-display);font-weight:600;font-size:16px;cursor:pointer;}
   }
 </style>
 </head>
@@ -231,7 +237,7 @@
   <div class="row" id="catRow"><span class="row__label">性質</span></div>
   <div class="row" id="shiftRow"><span class="row__label">班別</span></div>
   <div class="row" id="restRow"><span class="row__label">休假</span></div>
-  <div class="row">
+  <div class="row row--actions">
     <span class="row__label" style="visibility:hidden;">　</span>
     <label class="remote-toggle"><input type="checkbox" id="remoteOnly"> 只看可遠端</label>
     <button class="clear-btn" id="clearBtn">清除全部篩選</button>
