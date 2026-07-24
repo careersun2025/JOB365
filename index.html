@@ -64,7 +64,8 @@
   .stats{display:flex;justify-content:center;gap:28px;flex-wrap:wrap;font-family:var(--font-mono);font-size:13px;color:var(--text-muted);margin-bottom:24px;}
   .stats b{color:var(--text);font-size:16px;font-weight:600;}
 
-  .filterbar{position:sticky;top:0;z-index:20;background:rgba(18,21,28,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;flex-direction:column;gap:12px;}
+  .filterbar{position:sticky;top:0;z-index:20;background:rgba(18,21,28,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;flex-direction:column;gap:12px;max-height:600px;overflow:hidden;transition:max-height .32s ease, padding .32s ease, border-color .32s ease;}
+  .filterbar.collapsed{max-height:0;padding-top:0;padding-bottom:0;border-bottom-color:transparent;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
   .row__label{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;width:52px;flex-shrink:0;}
   .tab{background:transparent;border:1px solid var(--border);color:var(--text-muted);font-family:var(--font-body);font-size:13px;padding:7px 14px;border-radius:20px;cursor:pointer;transition:all .15s;}
@@ -794,6 +795,23 @@ rebuildRestUI();
 rebuildCityUI();
 renderStats();
 update();
+
+// 桌面版:捲動到地圖區塊時自動收合篩選列,捲回卡片區時自動展開(手機版走底部滑出面板,不受影響)
+(function(){
+  const mapEl = document.getElementById('map');
+  const filterbarEl = document.getElementById('filterbar');
+  if(!mapEl || !filterbarEl) return;
+  const observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(window.matchMedia('(min-width: 721px)').matches){
+        filterbarEl.classList.toggle('collapsed', entry.isIntersecting);
+      } else {
+        filterbarEl.classList.remove('collapsed'); // 手機版不套用收合邏輯
+      }
+    });
+  }, { threshold: 0.05 });
+  observer.observe(mapEl);
+})();
 
 const overrideUrl = new URLSearchParams(location.search).get('sheet');
 const activeSheetUrl = overrideUrl || SHEET_URL;
