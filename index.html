@@ -97,14 +97,14 @@
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--card-color,var(--teal));}
   .card:hover{transform:translateY(-2px);background:var(--bg-panel-hi);border-color:var(--text-faint);}
   .card.highlight{
-    border-color:var(--gold);
+    border-color:#fff;
     background:var(--bg-panel-hi);
-    box-shadow:0 0 0 2px var(--gold), 0 0 24px 4px rgba(242,169,61,.45), 0 8px 20px rgba(0,0,0,.35);
+    box-shadow:0 0 0 2px #fff, 0 0 24px 4px rgba(255,255,255,.45), 0 8px 20px rgba(0,0,0,.35);
     animation:cardGlow 1.8s ease-in-out infinite;
   }
   @keyframes cardGlow{
-    0%,100%{ box-shadow:0 0 0 2px var(--gold), 0 0 24px 4px rgba(242,169,61,.45), 0 8px 20px rgba(0,0,0,.35); }
-    50%{ box-shadow:0 0 0 2px var(--gold), 0 0 34px 8px rgba(242,169,61,.65), 0 8px 20px rgba(0,0,0,.35); }
+    0%,100%{ box-shadow:0 0 0 2px #fff, 0 0 24px 4px rgba(255,255,255,.45), 0 8px 20px rgba(0,0,0,.35); }
+    50%{ box-shadow:0 0 0 2px #fff, 0 0 34px 8px rgba(255,255,255,.7), 0 8px 20px rgba(0,0,0,.35); }
   }
   .card__top{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
   .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em;}
