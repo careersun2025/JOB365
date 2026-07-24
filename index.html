@@ -171,6 +171,8 @@
       transition:transform .28s ease;
       z-index:50;
       padding:16px 16px 12px;
+      background:var(--bg-panel); /* 改成跟標題列一致的不透明底色,不再用半透明毛玻璃,避免色塊對不齊 */
+      backdrop-filter:none;
     }
     .filterbar.open{transform:translateY(0);}
     .filterbar .tab, .filterbar .chip{font-size:15px;padding:9px 16px;}
@@ -542,8 +544,8 @@ function renderList(items){
     card.dataset.id = job.id;
     card.innerHTML = `
       <div class="card__top">
-        <span class="badge badge--cat">${job.category}</span>
         ${job.type ? `<span class="badge badge--type">${job.type}</span>` : ''}
+        <span class="badge badge--cat">${job.category}</span>
         ${job.shift ? `<span class="badge" style="background:color-mix(in srgb, ${SHIFT_COLOR[job.shift]||'#8B93A1'} 18%, transparent);color:${SHIFT_COLOR[job.shift]||'#8B93A1'}">${job.shift}</span>` : ''}
         ${job.restDay ? `<span class="badge" style="background:color-mix(in srgb, ${REST_COLOR[job.restDay]||'#8B93A1'} 18%, transparent);color:${REST_COLOR[job.restDay]||'#8B93A1'}">${job.restDay}</span>` : ''}
         ${job.remote?'<span class="badge badge--remote">可遠端</span>':''}
@@ -598,19 +600,14 @@ function focusJob(id, flyMap){
   document.querySelectorAll('.card').forEach(c=> c.classList.toggle('highlight', Number(c.dataset.id)===id));
   renderMap(getFiltered());
   if(job && flyMap && job.lat!=null && job.lng!=null){
-    const isMobile = window.matchMedia('(max-width: 720px)').matches;
     const targetZoom = job.overseas ? 7 : 14; // 放大幅度加強,尤其是台灣本地職缺會拉得更近
     const doFly = ()=>{
       map.flyTo([job.lat, job.lng], targetZoom, { duration:1 });
       markers[id] && setTimeout(()=> markers[id].openPopup(), 550);
     };
-    if(isMobile){
-      // 手機版:先捲動到地圖區塊,捲動結束後才開始放大聚焦,順序清楚不會兩個動作打架
-      document.getElementById('map').scrollIntoView({ behavior:'smooth', block:'center' });
-      setTimeout(doFly, 450);
-    } else {
-      doFly();
-    }
+    // 先捲動到地圖區塊,捲動結束後才開始放大聚焦,順序清楚不會兩個動作打架(桌面版、手機版都適用)
+    document.getElementById('map').scrollIntoView({ behavior:'smooth', block:'center' });
+    setTimeout(doFly, 450);
   }
   if(job && !flyMap){
     document.querySelector(`.card[data-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
