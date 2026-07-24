@@ -96,7 +96,16 @@
   .card{position:relative;background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:18px 18px 16px 22px;cursor:pointer;transition:transform .15s, border-color .15s, background .15s;overflow:hidden;display:flex;flex-direction:column;}
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--card-color,var(--teal));}
   .card:hover{transform:translateY(-2px);background:var(--bg-panel-hi);border-color:var(--text-faint);}
-  .card.highlight{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold);}
+  .card.highlight{
+    border-color:var(--gold);
+    background:var(--bg-panel-hi);
+    box-shadow:0 0 0 2px var(--gold), 0 0 24px 4px rgba(242,169,61,.45), 0 8px 20px rgba(0,0,0,.35);
+    animation:cardGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes cardGlow{
+    0%,100%{ box-shadow:0 0 0 2px var(--gold), 0 0 24px 4px rgba(242,169,61,.45), 0 8px 20px rgba(0,0,0,.35); }
+    50%{ box-shadow:0 0 0 2px var(--gold), 0 0 34px 8px rgba(242,169,61,.65), 0 8px 20px rgba(0,0,0,.35); }
+  }
   .card__top{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
   .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em;}
   .badge--cat{background:color-mix(in srgb, var(--card-color) 18%, transparent);color:var(--card-color);}
@@ -595,6 +604,26 @@ function renderMap(items){
   });
 }
 
+// 捲動時確保整張卡片(或至少從頂端開始)都露在可視範圍內,不被桌面版展開後的篩選列蓋住
+function scrollCardFullyIntoView(el){
+  const filterbarEl = document.getElementById('filterbar');
+  const isDesktop = window.matchMedia('(min-width: 721px)').matches;
+  // 捲到卡片時篩選列會是展開狀態,所以用「完整展開的高度」估算遮擋範圍,不管目前是不是收合中
+  const topOverlay = isDesktop ? filterbarEl.scrollHeight : 0;
+  const viewportH = window.innerHeight;
+  const availableH = viewportH - topOverlay;
+  const rect = el.getBoundingClientRect();
+  const cardHeight = rect.height;
+  let desiredTop;
+  if(cardHeight <= availableH){
+    desiredTop = topOverlay + Math.max(16, (availableH - cardHeight) / 2);
+  } else {
+    desiredTop = topOverlay + 16; // 卡片本身比可視範圍還高,對齊到遮擋物下方,盡量從頭露出
+  }
+  const scrollDelta = rect.top - desiredTop;
+  window.scrollBy({ top: scrollDelta, behavior:'smooth' });
+}
+
 function focusJob(id, flyMap){
   state.activeId = id;
   const job = DATA.find(j=>j.id===id);
@@ -611,7 +640,8 @@ function focusJob(id, flyMap){
     setTimeout(doFly, 450);
   }
   if(job && !flyMap){
-    document.querySelector(`.card[data-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'center' });
+    const cardEl = document.querySelector(`.card[data-id="${id}"]`);
+    if(cardEl) scrollCardFullyIntoView(cardEl);
   }
 }
 
