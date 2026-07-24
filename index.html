@@ -660,6 +660,11 @@ function update(){
   renderList(filtered);
   renderMap(filtered);
 
+  // 保險:結果 0 筆時頁面會變很短,直接強制展開篩選列,避免自動收合邏輯誤判卡住
+  if(filtered.length === 0){
+    document.getElementById('filterbar').classList.remove('collapsed');
+  }
+
   // 手機版篩選按鈕上的已套用數量徽章、面板底部「顯示 N 筆結果」按鈕
   const activeCount = (state.region!=='all'?1:0) + (state.city!=='all'?1:0) + (state.sort!=='hot'?1:0)
     + state.cats.size + state.shifts.size + state.rests.size + (state.remoteOnly?1:0);
@@ -831,12 +836,15 @@ update();
   const mapEl = document.getElementById('map');
   const filterbarEl = document.getElementById('filterbar');
   if(!mapEl || !filterbarEl) return;
+  const SCROLL_THRESHOLD = 160; // 至少要真的往下捲動這麼多,才允許自動收合;避免頁面太短(例如搜尋 0 筆結果)時誤判
   const observer = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
-      if(window.matchMedia('(min-width: 721px)').matches){
-        filterbarEl.classList.toggle('collapsed', entry.isIntersecting);
+      const isDesktop = window.matchMedia('(min-width: 721px)').matches;
+      const hasScrolledEnough = window.scrollY > SCROLL_THRESHOLD;
+      if(isDesktop && entry.isIntersecting && hasScrolledEnough){
+        filterbarEl.classList.add('collapsed');
       } else {
-        filterbarEl.classList.remove('collapsed'); // 手機版不套用收合邏輯
+        filterbarEl.classList.remove('collapsed');
       }
     });
   }, { threshold: 0.05 });
